@@ -3,17 +3,17 @@
 
 #include <Shobjidl.h> // Для IExplorerCommand и т.д.
 #include <Shlwapi.h>
-#pragma comment(lib, "shlwapi")
+#pragma comment(lib, "shlwapi") // Это указание для линковщика, что нужно подрубить такую-то библиотеку
 #include <wrl/module.h>
 #include <wil/common.h>
 #include <QString>
 
-using namespace Microsoft::WRL;
+using namespace Microsoft::WRL; // Так удобнее, поверь
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
-                       )
+                       ) // Страшная хрень, без нее тоже по идее будет собираться
 {
     switch (ul_reason_for_call)
     {
@@ -26,6 +26,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
+// Без RuntimeClass тоже можно, но тогда нужно будет отказываться от того же ComPtr в IEnumExplorerCommand
 class CExplorerCommand : public RuntimeClass<RuntimeClassFlags<ClassicCom>, IExplorerCommand>
 {
 public:
@@ -36,10 +37,14 @@ public:
     virtual const EXPCMDFLAGS Flags() { return ECF_DEFAULT; }
     virtual const EXPCMDSTATE State(_In_opt_ IShellItemArray* selection) { return ECS_ENABLED; }
 
-    // Inherited via IExplorerCommand
+    // В каждом из последующих методов требуемое значение записываеся в передаваемый указатель, а сам метод
+    // Возвращает индикатор успешности выполнения этого метода (S_OK, S_FALSE, E_NOTIMPL в случае отсутствия
+    // Реализации функциональности метода и т.д.)
     HRESULT __stdcall GetTitle(_In_opt_ IShellItemArray* psiItemArray, LPWSTR* ppszName) override
     {
-        SHStrDupW(L"WinPlugins", ppszName);
+        SHStrDupW(L"WinPlugins", ppszName); // Это аналог strcpy() для LPWSTR
+                                            // Чтобы скопировать в переменную LPWSTR* константную строку,
+                                            // Необходимо перед ней поставить L
         return S_OK;
     }
     HRESULT __stdcall GetIcon(IShellItemArray* psiItemArray, LPWSTR* ppszIcon) override
